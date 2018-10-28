@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -19,9 +20,9 @@ func main() {
 	fs := http.StripPrefix("/public/", http.FileServer(http.Dir("./public/")))
 
 	//handle home route
-	router.HandleFunc("/", home).Methods("GET")
-	router.HandleFunc("/things/{name}", route2).Methods("GET")
-	router.HandleFunc("/register", register).Methods("POST")
+	router.HandleFunc("/", loggingMiddleware(home)).Methods("GET")
+	router.HandleFunc("/things/{name}", loggingMiddleware(route2)).Methods("GET")
+	router.HandleFunc("/register", loggingMiddleware(register)).Methods("POST")
 
 	//serve public file
 	router.PathPrefix("/").Handler(fs)
@@ -35,6 +36,14 @@ func home(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "requested %s", vals)
 }
 
+//logger middleware
+func loggingMiddleware(f http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		log.Println(r.URL)
+		f(w, r)
+	}
+}
+
 func register(w http.ResponseWriter, r *http.Request) {
 
 	details := contacts{
@@ -43,7 +52,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 		number: r.FormValue("number"),
 	}
 
-	fmt.Fprintf(w, "found %s", &details)
+	fmt.Fprintf(w, "found %s", details)
 }
 func route2(w http.ResponseWriter, r *http.Request) {
 	vals := mux.Vars(r)
